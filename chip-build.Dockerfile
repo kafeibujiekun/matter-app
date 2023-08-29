@@ -1,32 +1,24 @@
-FROM chip-build-test:1.1
+FROM ubuntu:22.04
 
-# COPY connectedhomeip /opt/connectedhomeip
-
-# WORKDIR /opt/connectedhomeip
-
-# zap工具
-# zap-v2023.04.27-nightly
-COPY zap-linux.zip /opt/
-RUN set -x \
-    && cd /opt \
-    && unzip zap-linux.zip -d zap-v2023.04.27-nightly \
-    # && echo "export ZAP_INSTALL_PATH=/opt/zap-v2023.04.27-nightly" >> ~/.bashrc \
-    && : # last line
-ENV ZAP_INSTALL_PATH /opt/zap-v2023.04.27-nightly
+COPY connectedhomeip /opt/connectedhomeip
 
 RUN set -x \
-    && cd /opt/connectedhomeip/scripts/py_matter_idl \
-    && python setup.py sdist bdist_wheel \
-    && pip install dist/matter_idl-0.0.1-py3-none-any.whl \
-    && pip3 install --no-cache-dir \
-    lark \
-    jinja2 \
-    stringcase \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -fy --fix-missing \
+    autoconf \
+    automake \
+    curl \
+    git gcc g++ pkg-config libssl-dev libdbus-1-dev \
+    libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev \
+    python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev vim \
     && : # last line
 
-COPY chip_build /opt/chip_build
-WORKDIR /opt/chip_build
+SHELL ["/bin/bash", "-c"]
+
 RUN set -x \
+    && cd /opt/connectedhomeip \
+    && source scripts/bootstrap.sh \
+    && source scripts/activate.sh \
     && gn gen out \
-    && ninja -C out \
+    && ninja -C out src/lib:lib \
     && : # last line
